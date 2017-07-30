@@ -19,9 +19,48 @@ namespace RawViewer
         int mWidth  = 0;
         int mHeight = 0;
 
+        int mIdxShow = 0;
+
         //---------------------------------------------------------------------
         public int UshortToByte(byte[] dst, ushort[] src, int width, int height, int bitshift)
         {
+            int PixlNum = width * height;
+
+            for (int n = 0; n < PixlNum; n++)
+            {
+                ushort tempUshort = (ushort)(src[n] >> bitshift);
+
+                byte tempByte = 0;
+
+                if (tempUshort > byte.MaxValue)
+                {
+                    tempByte = byte.MaxValue;
+                }
+                else {
+                    tempByte = (byte)tempUshort; 
+                }
+            }
+
+            return 0;
+        }
+
+        //---------------------------------------------------------------------
+        public int ReadRawFromFile(ushort[] dst, string src_filename, int width, int height)
+        {
+            int NumOfPixls = width * height;
+
+            byte[] tempByte = new byte[NumOfPixls*2];
+
+            System.IO.FileStream fs = new System.IO.FileStream(src_filename, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+
+            fs.Read(tempByte, 0, NumOfPixls*2);
+
+            fs.Close();
+
+            for (int n = 0; n < NumOfPixls; n++)
+            {
+                dst[n] = System.BitConverter.ToUInt16(tempByte, 2 * n);
+            }
 
             return 0;
         }
@@ -67,6 +106,10 @@ namespace RawViewer
                 this.mData = new ushort[pixlNum];
 
                 this.mFilenames = this.openFileDialog1.FileNames;
+
+                this.mIdxShow = 0;
+
+                ReadRawFromFile(this.mData, this.mFilenames[this.mIdxShow], this.mWidth, this.mHeight);
             }
         }
     }
