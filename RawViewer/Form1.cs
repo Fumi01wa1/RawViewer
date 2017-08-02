@@ -8,38 +8,32 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+
 namespace RawViewer
 {
     public partial class Form1 : Form
     {
-        string[] mFilenames = null;
-        ushort[] mData = null;
-        string mParamFilename = "param.csv";
+        private string mParamFilename = "param.csv";
 
-        int mWidth  = 0;
-        int mHeight = 0;
+        private string[] mFilenames = null;
 
-        int mIdxShow = 0;
+        byte[]   mData08bit = null;
+        ushort[] mData16bit = null;
+
+        Bitmap mBmp = null;
+
+        private int mWidth  = 0;
+        private int mHeight = 0;
+
+        private int mIdxShow = 0;
+
+        private int mNumBitShift = 0;
+
+        #region Functions without member variables.
 
         //---------------------------------------------------------------------
-        public int UshortToByte(byte[] dst, ushort[] src, int width, int height, int bitshift)
+        public int ByteToBmp08bpp(ref Bitmap dst, byte[] src, int width, int height)
         {
-            int PixlNum = width * height;
-
-            for (int n = 0; n < PixlNum; n++)
-            {
-                ushort tempUshort = (ushort)(src[n] >> bitshift);
-
-                byte tempByte = 0;
-
-                if (tempUshort > byte.MaxValue)
-                {
-                    tempByte = byte.MaxValue;
-                }
-                else {
-                    tempByte = (byte)tempUshort; 
-                }
-            }
 
             return 0;
         }
@@ -66,6 +60,52 @@ namespace RawViewer
         }
 
         //---------------------------------------------------------------------
+        public int UshortToByte(byte[] dst, ushort[] src, int width, int height, int bitshift)
+        {
+            int PixlNum = width * height;
+
+            for (int n = 0; n < PixlNum; n++)
+            {
+                ushort tempUshort = (ushort)(src[n] >> bitshift);
+
+                byte tempByte = 0;
+
+                if (tempUshort > byte.MaxValue)
+                {
+                    tempByte = byte.MaxValue;
+                }
+                else
+                {
+                    tempByte = (byte)tempUshort;
+                }
+            }
+
+            return 0;
+        }
+
+        #endregion
+
+        #region Functions with member variables.
+        public int SetImageSize(int width, int height)
+        {
+            if ((width <= 0) || (height <= 0)) return -1;
+
+            int NumOfPixcels = width * height;
+
+            this.mData08bit = new   byte[NumOfPixcels];
+            this.mData16bit = new ushort[NumOfPixcels];
+
+            this.mWidth  = width;
+            this.mHeight = height;
+
+            this.pictureBox1.Width  = this.mWidth;
+            this.pictureBox1.Height = this.mHeight;
+
+            return 0;
+        }
+        #endregion
+
+        //---------------------------------------------------------------------
         public Form1()
         {
             InitializeComponent();
@@ -86,6 +126,7 @@ namespace RawViewer
         {
             if (this.openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                // パラメータファイル読み込み.
                 System.IO.StreamReader sr = new System.IO.StreamReader(this.mParamFilename);
 
                 string strLine = "";
@@ -93,24 +134,30 @@ namespace RawViewer
 
                 strLine = sr.ReadLine();
                 strSplit = strLine.Split(',');
-                this.mWidth = int.Parse(strSplit[1]);
+                int tempWidth = int.Parse(strSplit[1]);
 
                 strLine = sr.ReadLine();
                 strSplit = strLine.Split(',');
-                this.mHeight = int.Parse(strSplit[1]);
+                int tempHeight = int.Parse(strSplit[1]);
 
                 sr.Close();
 
-                int pixlNum = this.mWidth * this.mHeight;
-
-                this.mData = new ushort[pixlNum];
+                this.SetImageSize(tempWidth, tempHeight);
 
                 this.mFilenames = this.openFileDialog1.FileNames;
 
+                ReadRawFromFile(this.mData16bit, this.mFilenames[this.mIdxShow], this.mWidth, this.mHeight);
+
                 this.mIdxShow = 0;
 
-                ReadRawFromFile(this.mData, this.mFilenames[this.mIdxShow], this.mWidth, this.mHeight);
+                this.pictureBox1.Invalidate();
             }
+        }
+
+        //---------------------------------------------------------------------
+        private void pictureBox1_Paint(object sender, PaintEventArgs e)
+        {
+            //
         }
     }
 }
